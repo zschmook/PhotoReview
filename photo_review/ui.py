@@ -10,7 +10,7 @@ from PySide6.QtGui import QAction,QKeySequence,QPixmap,QColor,QBrush,QFont,QIcon
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,
     QPushButton,QFrame,QSlider,QListWidget,QListWidgetItem,QListView,QSplitter,QCheckBox,QScrollArea,QLineEdit,QComboBox,
     QDialog,QTableWidget,QTableWidgetItem,QHeaderView,QFileDialog,QMessageBox,QGraphicsView,QRadioButton,QButtonGroup,
-    QGraphicsScene,QAbstractItemView,QProgressBar,QTreeWidget,QTreeWidgetItem,QStackedWidget,QStyledItemDelegate,QStyle,QStyleOptionButton)
+    QGraphicsScene,QAbstractItemView,QProgressBar,QTreeWidget,QTreeWidgetItem,QStackedWidget,QStyledItemDelegate,QStyle,QStyleOptionButton,QPlainTextEdit)
 from .core import Group,scan,make_groups,similarity,save_draft,restore_draft,validate_plan
 from .recycle import apply_plan
 
@@ -80,6 +80,29 @@ def button(text,handler=None,primary=False):
     if handler:item.clicked.connect(handler)
     if primary:item.setObjectName('primary')
     return item
+
+
+class UpdateDialog(QDialog):
+    def __init__(self,parent,update,current=VERSION):
+        super().__init__(parent)
+        self.setWindowTitle('Photo Review update available')
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint,False)
+        self.resize(600,450)
+        box=QVBoxLayout(self);box.setContentsMargins(24,24,24,22);box.setSpacing(14)
+        heading=label('Photo Review v'+update.version+' is available.','title');heading.setWordWrap(True);box.addWidget(heading)
+        box.addWidget(label('Installed version: v'+current,'muted'))
+        box.addWidget(label("WHAT’S NEW",'eyebrow'))
+        self.notes=QPlainTextEdit(self);self.notes.setReadOnly(True)
+        self.notes.setPlainText(update.release_notes or 'No release notes were provided for this version.')
+        self.notes.setMinimumHeight(150);box.addWidget(self.notes,1)
+        detail=label('Update now opens the EXE download in your browser. After downloading, close Photo Review and replace the old EXE. Your pictures and saved settings stay in place.','muted')
+        detail.setWordWrap(True);box.addWidget(detail)
+        box.addWidget(label('Skip dismisses this prompt until the next launch.','small'))
+        row=QHBoxLayout();row.addStretch()
+        self.skip_button=button('Skip',self.reject);self.skip_button.setDefault(True);row.addWidget(self.skip_button)
+        self.update_button=button('Update now',self.accept,True);self.update_button.setAutoDefault(False);row.addWidget(self.update_button)
+        box.addLayout(row)
 
 
 def format_size(value):
@@ -734,18 +757,12 @@ class Window(QMainWindow):
         if self.pending_update is None:self.update_display_timer.stop();return
         if not self.root or (self.worker and self.worker.isRunning()) or QApplication.activeModalWidget() is not None:return
         update=self.pending_update;self.pending_update=None;self.update_display_timer.stop()
-        self.update_notice=QMessageBox(self);self.update_notice.setWindowTitle('Photo Review update available')
-        self.update_notice.setIcon(QMessageBox.Icon.Information);self.update_notice.setTextFormat(Qt.TextFormat.PlainText)
-        self.update_notice.setText('Photo Review v'+update.version+' is available.')
-        self.update_notice.setInformativeText('You have v'+VERSION+'. Download the new EXE, then close Photo Review and replace the old EXE. Your saved settings stay on this computer.')
-        download=self.update_notice.addButton('Download update',QMessageBox.ButtonRole.AcceptRole)
-        later=self.update_notice.addButton('Later',QMessageBox.ButtonRole.RejectRole);self.update_notice.setDefaultButton(later)
-        def selected(button):
-            if button is download:
-                from PySide6.QtCore import QUrl
-                from PySide6.QtGui import QDesktopServices
-                QDesktopServices.openUrl(QUrl(update.download_url))
-        self.update_notice.buttonClicked.connect(selected);self.update_notice.open()
+        self.update_notice=UpdateDialog(self,update)
+        def download():
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(QUrl(update.download_url))
+        self.update_notice.accepted.connect(download);self.update_notice.open()
     def read_preferences(self):
         try:
             result=json.loads(self.preferences.read_text(encoding='utf-8'))

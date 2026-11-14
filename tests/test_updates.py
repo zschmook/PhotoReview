@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError,URLError
 from photo_review.updates import parse_release,check_latest,version_tuple,Update
+from photo_review.version import VERSION
 
 
 def release(tag='v1.1'):
@@ -32,6 +33,16 @@ class UpdateTests(unittest.TestCase):
             payload=release();payload['assets'][0]['browser_download_url']=url;self.assertIsNone(parse_release(payload,current='1.0'))
         for key,value in (('size',0),('state','new'),('name','source.zip')):
             payload=release();payload['assets'][0][key]=value;self.assertIsNone(parse_release(payload,current='1.0'))
+    def test_notes_are_optional_bounded_text(self):
+        payload=release();payload['body']='  <b>Changes</b>\n- New update dialog.  '
+        self.assertEqual(parse_release(payload,current='1.0').release_notes,'<b>Changes</b>\n- New update dialog.')
+        payload['body']='x'*20000
+        self.assertEqual(len(parse_release(payload,current='1.0').release_notes),16000)
+        for body in (None,{},42):
+            payload['body']=body;self.assertEqual(parse_release(payload,current='1.0').release_notes,'')
+        self.assertEqual(parse_release(release(),current='1.0').release_notes,'')
+    def test_installed_version_is_never_offered_as_an_update(self):
+        self.assertIsNone(parse_release(release('v'+VERSION)))
     def test_one_public_request_has_timeout_and_bounded_payload(self):
         class Response(io.BytesIO):
             def geturl(self):return 'https://api.github.com/repos/zschmook/PhotoReview/releases/latest'
@@ -71,6 +82,25 @@ class StartupUpdateUiTests(unittest.TestCase):
         self.window.update_check_complete(update);self.assertIsNone(self.window.update_notice)
         self.window.root=Path(self.temp.name);self.window.show_update_if_ready();self.assertIsNotNone(self.window.update_notice)
         with patch('PySide6.QtGui.QDesktopServices.openUrl') as opened:
-            button=next(b for b in self.window.update_notice.buttons() if b.text()=='Download update')
-            button.click();self.app.processEvents();self.assertEqual(opened.call_count,1)
+            self.window.update_notice.update_button.click();self.app.processEvents();self.assertEqual(opened.call_count,1)
             self.assertEqual(opened.call_args.args[0].toString(),update.download_url)
+    def test_startup_response_shows_release_notes_and_skip_does_not_download(self):
+        next_version=str(int(VERSION.split('.')[0])+1)+'.0'
+        payload=release('v'+next_version);payload['body']='- Show release notes.\n<a href="https://example.com">Literal text</a>'
+        class Response(io.BytesIO):
+            def geturl(self):return 'https://api.github.com/repos/zschmook/PhotoReview/releases/latest'
+        def opener(request,timeout):return Response(json.dumps(payload).encode())
+        self.window.root=Path(self.temp.name)
+        with patch('photo_review.updates.check_latest',side_effect=lambda:check_latest(opener=opener)) as check,patch('PySide6.QtGui.QDesktopServices.openUrl') as opened:
+            self.window.start_update_check();self.finish_worker()
+            notice=self.window.update_notice;self.assertIsNotNone(notice)
+            self.assertEqual(notice.notes.toPlainText(),payload['body']);self.assertTrue(notice.notes.isReadOnly())
+            self.assertEqual(notice.update_button.text(),'Update now');self.assertEqual(notice.skip_button.text(),'Skip')
+            notice.skip_button.click();self.app.processEvents()
+            self.window.start_update_check();self.window.show_update_if_ready()
+            self.assertEqual(check.call_count,1);opened.assert_not_called();self.assertFalse(notice.isVisible())
+            self.assertFalse(self.window.preferences.exists())
+    def test_missing_release_notes_have_a_readable_fallback(self):
+        from photo_review.ui import UpdateDialog
+        dialog=UpdateDialog(self.window,Update('9.0','https://github.com/zschmook/PhotoReview/releases/tag/v9.0','https://github.com/zschmook/PhotoReview/releases/download/v9.0/PhotoReview.exe'))
+        self.assertEqual(dialog.notes.toPlainText(),'No release notes were provided for this version.');dialog.close()

@@ -19,6 +19,7 @@ class Update:
     version:str
     release_url:str
     download_url:str
+    release_notes:str=''
 
 
 def parse_release(release,current=VERSION,repository=REPOSITORY):
@@ -34,7 +35,9 @@ def parse_release(release,current=VERSION,repository=REPOSITORY):
         if not isinstance(asset,dict) or asset.get('name')!='PhotoReview.exe' or asset.get('state')!='uploaded':continue
         if not isinstance(asset.get('size'),int) or asset['size']<=0:continue
         if asset.get('browser_download_url')!=expected:continue
-        return Update(str(tag).removeprefix('v'),f'https://github.com/{repository}/releases/tag/{quote(tag,safe="")}',expected)
+        notes=release.get('body')
+        notes=notes[:16000].strip() if isinstance(notes,str) else ''
+        return Update(str(tag).removeprefix('v'),f'https://github.com/{repository}/releases/tag/{quote(tag,safe="")}',expected,notes)
     return None
 
 

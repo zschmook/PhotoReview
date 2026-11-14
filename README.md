@@ -1,4 +1,4 @@
-# Photo Review v1.1
+# Photo Review v1.2
 
 A Windows desktop app for comparing similar photos and choosing what to keep. Python + PySide6, packaged as a single EXE with Nuitka. Photo processing happens locally.
 
@@ -31,7 +31,7 @@ Phone-original deletion is a separate action requiring two confirmations. After 
 
 ## Startup updates
 
-The app makes one background request to [GitHub's latest-release API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) when it opens. It offers **Download update** only for a newer stable version with a published PhotoReview.exe asset. That button opens GitHub's executable download. Close the app and replace the old EXE after downloading; settings stay in place.
+The app makes one background request to [GitHub's latest-release API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) when it opens. For a newer stable version with a published PhotoReview.exe asset, it shows the installed/new versions and the GitHub release notes. **Update now** opens GitHub's executable download. Close the app and replace the old EXE after downloading; settings stay in place. **Skip** dismisses the prompt until the next launch.
 
 There is no periodic network polling. A pending notice waits for the first-run folder choice and active modal work. Offline failures, rate limits and absent releases remain quiet. No photos or file paths are sent with the update request. The app does not silently install or replace itself.
 
@@ -61,9 +61,9 @@ The single EXE is published to `dist/PhotoReview.exe`. Intermediate output stays
 The version lives in **photo_review/version.py**. Package metadata and Windows EXE resources derive from it. Update that version and RELEASE_NOTES.md for the next release, commit, then push a matching version tag:
 
 ```bash
-git tag v1.1
+git tag v1.2
 git push origin main
-git push origin v1.1
+git push origin v1.2
 ```
 
 The **Windows release** GitHub Actions workflow tests generated-data operations, builds a Windows x64 single EXE, runs the packaged smoke test, and publishes PhotoReview.exe, SHA256SUMS.txt and release-manifest.json. It uses a draft until all assets are uploaded. A published version is never overwritten; use a new version/tag. Failed builds leave no published update. The workflow can also be run manually for an existing matching tag.
