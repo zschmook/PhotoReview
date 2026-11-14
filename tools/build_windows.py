@@ -21,7 +21,7 @@ def build_command(extra=(),build_id=None):
     return [sys.executable,'-m','nuitka','main.py',
         '--mode=onefile','--enable-plugin=pyside6','--include-qt-plugins=multimedia','--windows-console-mode=disable',
         '--file-version='+windows_version,'--product-version='+windows_version,'--product-name=Photo Review','--file-description=Photo Review',
-        '--windows-icon-from-ico=assets/photo-review.ico','--include-data-dir=assets=assets',
+        '--windows-icon-from-ico=assets/photo-review.ico','--include-data-dir=assets=assets','--include-data-files=LICENSE=LICENSE',
         '--include-package=wgpu','--include-module=_cffi_backend','--include-distribution-metadata=wgpu',
         '--include-package=pillow_heif','--include-module=_pillow_heif',
         '--user-package-configuration-file=nuitka-package.config.yml',

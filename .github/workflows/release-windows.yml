@@ -12,6 +12,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -41,6 +42,25 @@ jobs:
             requirements-build.txt
       - name: Validate release version
         run: python tools/release_windows.py --tag "$env:RELEASE_TAG" --validate
+      - name: Validate signing settings
+        if: vars.SIGNPATH_ENABLED == 'true'
+        id: signing_settings
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_ARTIFACT_CONFIGURATION_SLUG: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+        run: |
+          foreach ($name in @('SIGNPATH_API_TOKEN', 'SIGNPATH_ORGANIZATION_ID', 'SIGNPATH_PROJECT_SLUG', 'SIGNPATH_SIGNING_POLICY_SLUG', 'SIGNPATH_ARTIFACT_CONFIGURATION_SLUG')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Signing is enabled but $name is missing."
+            }
+          }
+          $version = python -c "from photo_review.version import VERSION; print('.'.join((VERSION.split('.') + ['0'] * 4)[:4]))"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not determine the signing version.' }
+          "windows_version=$version" >> $env:GITHUB_OUTPUT
       - name: Install build dependencies
         run: python -m pip install -r requirements-build.txt
       - name: Test generated-data workflows
@@ -54,6 +74,40 @@ jobs:
           if ($process.ExitCode -ne 0) { throw 'Packaged smoke test failed' }
           $report = Get-Content artifacts/release-smoke.json -Raw | ConvertFrom-Json
           if (-not $report.ok) { throw 'Packaged smoke report did not pass' }
+      - name: Upload unsigned EXE for signing
+        if: vars.SIGNPATH_ENABLED == 'true'
+        id: unsigned_exe
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: photoreview-unsigned-${{ env.RELEASE_TAG }}
+          path: dist/PhotoReview.exe
+          if-no-files-found: error
+          retention-days: 7
+      - name: Request SignPath signing and wait for approval
+        if: vars.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.unsigned_exe.outputs.artifact-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: .build/signed
+          parameters: |
+            version: ${{ toJSON(steps.signing_settings.outputs.windows_version) }}
+      - name: Verify and stage signed EXE
+        if: vars.SIGNPATH_ENABLED == 'true'
+        shell: pwsh
+        env:
+          EXPECTED_VERSION: ${{ steps.signing_settings.outputs.windows_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./tools/verify_signed_release.ps1 -Path .build/signed/PhotoReview.exe -ExpectedVersion $env:EXPECTED_VERSION
+          Copy-Item -LiteralPath .build/signed/PhotoReview.exe -Destination dist/PhotoReview.exe -Force
       - name: Publish tested release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

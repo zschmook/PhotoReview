@@ -96,6 +96,8 @@ git push origin v1.2
 
 The **Windows release** GitHub Actions workflow tests generated-data operations, builds a Windows x64 single EXE, runs the packaged smoke test, and publishes PhotoReview.exe, SHA256SUMS.txt and release-manifest.json. It uses a draft until all assets are uploaded. A published version is never overwritten; use a new version/tag. Failed builds leave no published update. The workflow can also be run manually for an existing matching tag.
 
+The optional SignPath stage is prepared but disabled pending approval/account setup. When enabled, it waits for signing approval, validates the signed EXE, and computes release checksums from that signed copy before publication. See [Code signing policy](docs/code-signing.md).
+
 GPU execution is optional in the smoke test because hosted runners may lack a hardware GPU. CPU comparison, HEIC decoding/conversion, Qt startup, icon loading and Windows Shell interfaces remain checked. Generated CI diagnostics are stored as workflow artifacts.
 
 ## Tests

@@ -23,6 +23,13 @@ def validate_tag(tag):
     return tag
 
 
+def release_body(tag):
+    validate_tag(tag)
+    notes=(ROOT/'RELEASE_NOTES.md').read_text(encoding='utf-8').rstrip()
+    policy=f'https://github.com/{REPOSITORY}/blob/{quote(tag,safe="")}/docs/code-signing.md'
+    return notes+'\n\n## Code signing policy\n\nSee the [code signing policy]('+policy+') for provider status, release approval, and privacy information.\n'
+
+
 def release_assets(dist=ROOT/'dist'):
     dist=Path(dist);exe=dist/'PhotoReview.exe'
     if not exe.is_file() or exe.stat().st_size<=0:raise ValueError('A built PhotoReview.exe is required')
@@ -50,7 +57,7 @@ def publish(tag,token):
     try:release=api('GET','/releases/tags/'+quote(tag,safe=''))
     except HTTPError as error:
         if error.code!=404:raise
-        release=api('POST','/releases',dict(tag_name=tag,target_commitish=head,name='Photo Review '+tag,body=(ROOT/'RELEASE_NOTES.md').read_text(encoding='utf-8'),draft=True,prerelease=False))
+        release=api('POST','/releases',dict(tag_name=tag,target_commitish=head,name='Photo Review '+tag,body=release_body(tag),draft=True,prerelease=False))
     if not release.get('draft'):raise ValueError('This release is already published; bump the version instead of replacing it')
     release_id=int(release['id'])
     for asset in release.get('assets',[]):

@@ -22,7 +22,7 @@ The proposed provider attribution, **to be activated only after acceptance**, is
 
 The application processes media locally and does not upload pictures, library paths, thumbnails, or import records. Its startup check sends a request to GitHub’s release API; the service receives ordinary connection information and the app version in the user agent. Choosing Update now opens GitHub’s download in the browser. See the [README privacy section](../README.md#privacy) and [GitHub privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
 
-If signing is enabled, the release workflow sends the public build artifact and source/build identifiers to SignPath for signing. User photo libraries and local development samples are excluded from the repository and release artifacts. See [SignPath’s privacy policy](https://about.signpath.io/privacy-policy).
+If signing is enabled, the release workflow sends the public build artifact and source/build identifiers to SignPath for signing. User photo libraries and local development samples are excluded from the repository and release artifacts. See [SignPath’s privacy policy](https://signpath.io/privacy-policy).
 
 ## Prepared application
 

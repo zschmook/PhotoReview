@@ -5,7 +5,7 @@ import tempfile
 import tomllib
 import unittest
 from photo_review.version import VERSION,REPOSITORY
-from tools.release_windows import validate_tag,release_assets
+from tools.release_windows import validate_tag,release_assets,release_body
 from tools.build_windows import build_command
 
 
@@ -19,6 +19,10 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn('--file-version='+windows_version,build_command())
         metadata=tomllib.loads((Path(__file__).resolve().parents[1]/'pyproject.toml').read_text())
         self.assertEqual(metadata['tool']['setuptools']['dynamic']['version']['attr'],'photo_review.version.VERSION')
+    def test_release_notes_link_the_matching_tags_signing_policy(self):
+        tag='v'+VERSION
+        self.assertIn('https://github.com/zschmook/PhotoReview/blob/'+tag+'/docs/code-signing.md',release_body(tag))
+        self.assertIn('## Code signing policy',release_body(tag))
     def test_release_checksums_describe_the_actual_executable(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder=Path(temporary);exe=folder/'PhotoReview.exe';payload=b'generated fake EXE for manifest tests';exe.write_bytes(payload)
