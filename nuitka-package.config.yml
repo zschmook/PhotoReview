@@ -1,0 +1,24 @@
+- module-name: 'pillow_heif'
+  dlls:
+    - from_filenames:
+        relative_path: '..'
+        prefixes:
+          - 'libheif-'
+          - 'libde265-'
+          - 'libx265-'
+          - 'libgcc_s_seh-'
+          - 'libstdc++-'
+          - 'libwinpthread-'
+      when: 'win32'
+
+- module-name: 'wgpu.resources'
+  dlls:
+    - from_filenames:
+        relative_path: '.'
+        prefixes:
+          - 'wgpu_native-release'
+      when: 'win32'
+  data-files:
+    - patterns:
+        - '*.h'
+        - '*.idl'

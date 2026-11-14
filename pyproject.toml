@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-review"
+description = "Windows photo comparison and keep-first review"
+requires-python = ">=3.12"
+dynamic = ["dependencies", "version"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "photo_review.version.VERSION"}
+
+[tool.setuptools.packages.find]
+include = ["photo_review*"]
+
+[project.optional-dependencies]
+gpu = ["wgpu==0.33.0"]
+build = ["nuitka>=2.4", "ordered-set", "zstandard"]
