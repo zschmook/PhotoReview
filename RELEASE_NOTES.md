@@ -1,11 +1,8 @@
-# Photo Review v1.3
+# Photo Review v1.3.1
 
-- Portable EXEs can now update in place. Choose "Update now" to download and verify the new release, save your review, and restart at the same EXE location.
-- Downloads show progress and transfer speed, and can be cancelled before installation.
-- Release size and SHA-256 checksums are verified before closing the app. Once the installed EXE is signed, updates also require a valid signature from the same publisher.
-- A temporary helper waits for PhotoReview to exit before replacing its EXE. Replacement or launch failures restore the previous EXE; a previous copy is retained in the app’s update cache.
-- Pictures, settings, and saved selections stay in place, and the current review reopens after updating.
+- Version-only test release for the portable updater introduced in v1.3.
+- Photo comparison, imports, video review, and recycling behavior are unchanged.
 
-Versions through v1.2 need one final manual download/replacement to install this updater. After that, use the in-app update button for future releases. A writable application folder is required; the updater does not request administrator access.
+To test: close and reopen your installed v1.3 EXE after this release is published, then choose "Update now". It should download and verify v1.3.1, save the review, replace the EXE at the same path, and reopen as Photo Review v1.3.1.
 
-Update checks still happen only when opening the app. "Skip" dismisses the prompt until the next launch. No Python, Docker, or separate installed updater is required.
+Pictures, settings, and saved selections stay in place. Update checks still happen only at startup. Versions through v1.2 require a manual EXE replacement.

@@ -9,7 +9,7 @@ on:
       tag:
         description: Existing version tag to build and release
         required: true
-        default: v1.3
+        default: v1.3.1
         type: string
 
 permissions:

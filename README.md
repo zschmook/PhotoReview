@@ -1,4 +1,4 @@
-# Photo Review v1.3
+# Photo Review v1.3.1
 
 A Windows desktop app for sorting a camera roll, comparing similar shots, and choosing which pictures and videos to keep. Import from an Android phone, iPhone, or USB drive, then review the files in your own library.
 
@@ -101,9 +101,9 @@ The single EXE is published to `dist/PhotoReview.exe`. Intermediate output stays
 The version lives in **photo_review/version.py**. Package metadata and Windows EXE resources derive from it. Update that version and RELEASE_NOTES.md for the next release, commit, then push a matching version tag:
 
 ```bash
-git tag v1.3
+git tag v1.3.1
 git push origin main
-git push origin v1.3
+git push origin v1.3.1
 ```
 
 The **Windows release** GitHub Actions workflow tests generated-data operations, builds a Windows x64 single EXE, runs the packaged smoke test, and publishes PhotoReview.exe, SHA256SUMS.txt and release-manifest.json. It uses a draft until all assets are uploaded. A published version is never overwritten; use a new version/tag. Failed builds leave no published update. The workflow can also be run manually for an existing matching tag.

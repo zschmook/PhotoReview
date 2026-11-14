@@ -7,7 +7,7 @@ on:
       tag:
         description: Existing version tag matching the tested EXE
         required: true
-        default: v1.3
+        default: v1.3.1
         type: string
       build_run_id:
         description: Windows release run that saved the tested EXE
