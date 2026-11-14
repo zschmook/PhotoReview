@@ -116,6 +116,17 @@ jobs:
           path: dist/PhotoReview.exe
           if-no-files-found: error
           retention-days: 7
+      - name: Load publisher from the workflow revision
+        env:
+          PUBLISHER_REVISION: ${{ github.workflow_sha }}
+        run: |
+          @'
+          import os,subprocess
+          from pathlib import Path
+          revision=os.environ['PUBLISHER_REVISION']
+          publisher=subprocess.check_output(['git','show',revision+':tools/release_windows.py'])
+          Path('tools/release_windows.py').write_bytes(publisher)
+          '@ | python -
       - name: Publish tested release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

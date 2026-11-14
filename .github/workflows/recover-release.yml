@@ -1,0 +1,68 @@
+name: Publish saved Windows EXE
+run-name: Recover Photo Review ${{ inputs.tag }} from build ${{ inputs.build_run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag matching the tested EXE
+        required: true
+        default: v1.2
+        type: string
+      build_run_id:
+        description: Windows release run that saved the tested EXE
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Validate saved build and prepare tagged source
+        id: saved
+        run: python tools/recover_release.py --tag "$env:RELEASE_TAG" --run-id "$env:BUILD_RUN_ID"
+      - name: Download the tested EXE
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          artifact-ids: ${{ steps.saved.outputs.artifact_id }}
+          path: .build/release-recovery-source/dist
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.build_run_id }}
+      - name: Verify executable identity
+        shell: pwsh
+        env:
+          EXPECTED_VERSION: ${{ steps.saved.outputs.windows_version }}
+        run: |
+          $binary = Get-Item -LiteralPath .build/release-recovery-source/dist/PhotoReview.exe
+          $metadata = $binary.VersionInfo
+          if ($binary.Length -le 0 -or $metadata.ProductName -cne 'Photo Review' -or $metadata.FileVersion -cne $env:EXPECTED_VERSION -or $metadata.ProductVersion -cne $env:EXPECTED_VERSION) {
+            throw 'Saved EXE does not match the requested Photo Review version.'
+          }
+      - name: Verify signature when signing is enabled
+        if: vars.SIGNPATH_ENABLED == 'true'
+        env:
+          EXPECTED_VERSION: ${{ steps.saved.outputs.windows_version }}
+        run: ./tools/verify_signed_release.ps1 -Path .build/release-recovery-source/dist/PhotoReview.exe -ExpectedVersion $env:EXPECTED_VERSION
+      - name: Publish saved EXE using the maintained publisher
+        run: python .build/release-recovery-source/tools/release_windows.py --tag "$env:RELEASE_TAG"

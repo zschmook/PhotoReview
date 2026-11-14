@@ -1,4 +1,5 @@
 import hashlib
+import copy
 import io
 import json
 from pathlib import Path
@@ -11,6 +12,7 @@ from urllib.request import Request
 from photo_review.version import VERSION,REPOSITORY
 from tools.release_windows import validate_tag,release_assets,release_body,publish,verify_remote_tag,request_json,ReleaseAPIError
 from tools.build_windows import build_command
+from tools.recover_release import validate_saved_build,REQUIRED_STEPS
 
 
 class ReleaseTests(unittest.TestCase):
@@ -75,3 +77,23 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ReleaseAPIError) as caught:request_json(request,60,'test-token')
         self.assertIn('POST /repos/zschmook/PhotoReview/releases: HTTP 403',str(caught.exception))
         self.assertIn('Resource not accessible by integration',str(caught.exception));self.assertNotIn('test-token',str(caught.exception))
+    def test_recovery_requires_a_matching_tested_unexpired_artifact(self):
+        tag='v'+VERSION;head='a'*40
+        valid={'run':{'repository':{'full_name':REPOSITORY},'path':'.github/workflows/release-windows.yml','status':'completed','event':'push','head_sha':head},
+               'jobs':{'jobs':[{'steps':[{'name':name,'conclusion':'success'} for name in REQUIRED_STEPS]}]},
+               'artifacts':{'artifacts':[{'id':123,'name':'photoreview-tested-'+tag,'expired':False,'size_in_bytes':100}]}}
+        def api_for(data):
+            return lambda path:data['jobs'] if '/jobs?' in path else data['artifacts'] if '/artifacts?' in path else data['run']
+        self.assertEqual(validate_saved_build(tag,'42',api_for(valid),head),123)
+        cases=[]
+        for key,value in (('repository',{'full_name':'other/repo'}),('head_sha','b'*40),('status','in_progress'),('event','pull_request')):
+            data=copy.deepcopy(valid);data['run'][key]=value;cases.append(data)
+        data=copy.deepcopy(valid);data['jobs']['jobs'][0]['steps'][0]['conclusion']='failure';cases.append(data)
+        data=copy.deepcopy(valid);data['artifacts']['artifacts'][0]['expired']=True;cases.append(data)
+        data=copy.deepcopy(valid);data['artifacts']['artifacts'][0]['name']='unrelated';cases.append(data)
+        for data in cases:
+            with self.subTest(data=data),self.assertRaises(ValueError):validate_saved_build(tag,'42',api_for(data),head)
+    def test_recovery_does_not_add_a_broken_policy_link_to_an_older_tag(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);(root/'RELEASE_NOTES.md').write_text('Original release notes\n')
+            with patch('tools.release_windows.ROOT',root):self.assertEqual(release_body('v'+VERSION),'Original release notes\n')

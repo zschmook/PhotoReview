@@ -43,6 +43,7 @@ def validate_tag(tag):
 def release_body(tag):
     validate_tag(tag)
     notes=(ROOT/'RELEASE_NOTES.md').read_text(encoding='utf-8').rstrip()
+    if not (ROOT/'docs'/'code-signing.md').is_file():return notes+'\n'
     policy=f'https://github.com/{REPOSITORY}/blob/{quote(tag,safe="")}/docs/code-signing.md'
     return notes+'\n\n## Code signing policy\n\nSee the [code signing policy]('+policy+') for provider status, release approval, and privacy information.\n'
 
