@@ -1,4 +1,4 @@
-# Photo Review v1.2
+# Photo Review v1.3
 
 A Windows desktop app for sorting a camera roll, comparing similar shots, and choosing which pictures and videos to keep. Import from an Android phone, iPhone, or USB drive, then review the files in your own library.
 
@@ -25,7 +25,7 @@ Printing, ordering prints through commercial third-party services, and similar i
 | iPhone photo formats | Preview and compare HEIC/HEIF files directly. Create JPEG copies while retaining originals, including a conversion command for existing folders. |
 | Optional phone cleanup | After importing, use a separate two-confirmation flow with fresh checksum verification before removing phone originals. |
 | Repeat-use performance | Local SQLite caches and thumbnails speed up later reviews. Optional cross-vendor GPU comparison falls back to CPU when unavailable. |
-| Startup update checks | Check GitHub once when opening the app, display release notes, and offer Update now or Skip. |
+| Portable updates | Check GitHub once when opening the app, show release notes, and offer Update now or Skip. The packaged app can download, verify, replace its EXE at the same path, and resume the review. |
 
 Photo Review runs locally, requires no account for reviewing files, and is available as a single Windows x64 EXE. It is written in Python with PySide6 and packaged with Nuitka.
 
@@ -65,9 +65,15 @@ Phone-original deletion is a separate action requiring two confirmations. After 
 
 ## Startup updates
 
-The app makes one background request to [GitHub's latest-release API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) when it opens. For a newer stable version with a published PhotoReview.exe asset, it shows the installed/new versions and the GitHub release notes. **Update now** opens GitHub's executable download. Close the app and replace the old EXE after downloading; settings stay in place. **Skip** dismisses the prompt until the next launch.
+The app makes one background request to [GitHub's latest-release API](https://docs.github.com/en/rest/releases/releases#get-the-latest-release) when it opens. For a newer stable version with a published PhotoReview.exe asset, it shows the installed/new versions and the GitHub release notes. **Skip** dismisses the prompt until the next launch.
 
-There is no periodic network polling. A pending notice waits for the first-run folder choice and active modal work. Offline failures, rate limits and absent releases remain quiet. No photos or file paths are sent with the update request. The app does not silently install or replace itself.
+In the packaged Windows app, **Update now** downloads the release manifest and EXE, verifies its size, SHA-256 checksum, and product/version metadata, saves the current review, then closes the app. A temporary copy of the installed EXE acts as an updater: it waits for the original process to exit, replaces the EXE at the same location, and reopens the saved review. No Python installation, installer, administrator prompt, or manually copied replacement is required for a local, writable portable-app folder.
+
+The download is cancellable. Failed verification leaves the current app running. Replacement or launch failures restore the old EXE; a copy of that previous EXE is also kept in the app’s update cache for recovery. Older completed update-cache transactions are pruned without touching media or settings. Once the installed EXE is signed, updates must also have a valid signature from the same publisher.
+
+Versions through v1.2 need one final manual EXE replacement to get this updater. Running from Python, or updating to a release without a compatible manifest, keeps the browser-download flow. Read-only application folders cannot be updated in place; download manually or move the EXE to a writable folder.
+
+There is no periodic network polling. A pending notice waits for the first-run folder choice and active modal work. Offline failures, rate limits and absent releases remain quiet. No photos or file paths are sent with the update request. Installation starts only after choosing **Update now**.
 
 ## Run from Python
 
@@ -95,9 +101,9 @@ The single EXE is published to `dist/PhotoReview.exe`. Intermediate output stays
 The version lives in **photo_review/version.py**. Package metadata and Windows EXE resources derive from it. Update that version and RELEASE_NOTES.md for the next release, commit, then push a matching version tag:
 
 ```bash
-git tag v1.2
+git tag v1.3
 git push origin main
-git push origin v1.2
+git push origin v1.3
 ```
 
 The **Windows release** GitHub Actions workflow tests generated-data operations, builds a Windows x64 single EXE, runs the packaged smoke test, and publishes PhotoReview.exe, SHA256SUMS.txt and release-manifest.json. It uses a draft until all assets are uploaded. A published version is never overwritten; use a new version/tag. Failed builds leave no published update. The workflow can also be run manually for an existing matching tag.
@@ -113,14 +119,14 @@ GPU execution is optional in the smoke test because hosted runners may lack a ha
 Focused release checks use disposable generated images and mocked phone operations:
 
 ```bash
-.venv/Scripts/python.exe -m unittest tests.test_updates tests.test_release tests.test_core tests.test_heic tests.test_phones tests.test_phone_import tests.test_phone_download tests.test_phone_cleanup tests.test_phone_folders tests.test_usb_import tests.test_packaging tests.test_gpu.FallbackTests -q
+.venv/Scripts/python.exe -m unittest tests.test_updates tests.test_self_update tests.test_release tests.test_core tests.test_heic tests.test_phones tests.test_phone_import tests.test_phone_download tests.test_phone_cleanup tests.test_phone_folders tests.test_usb_import tests.test_packaging tests.test_gpu.FallbackTests -q
 ```
 
 Additional UI and video tests are available in tests/. Some older UI scenarios require optional local demo fixtures. Development test selection does not access physical phones or personal photo libraries. The packaged smoke check enumerates device identities and creates Shell interfaces without copying or deleting phone files.
 
 ## Privacy
 
-Photo comparison, thumbnails, import history, and checksums are processed and stored on the PC. Photo Review does not upload your media or collect analytics. A startup update check connects to GitHub; GitHub receives the connection’s IP address and the app version in its user agent, but no pictures or library paths. Choosing **Update now** opens a GitHub download in your browser. See [GitHub’s privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) for that service.
+Photo comparison, thumbnails, import history, and checksums are processed and stored on the PC. Photo Review does not upload your media or collect analytics. A startup update check connects to GitHub; GitHub receives the connection’s IP address and the app version in its user agent, but no pictures or library paths. Choosing **Update now** downloads the manifest and EXE from GitHub release storage; the Python/manual fallback opens that download in your browser. Windows checks code-signing certificates using its standard trust services. See [GitHub’s privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) for that service.
 
 ## Code signing policy
 

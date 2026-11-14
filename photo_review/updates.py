@@ -20,6 +20,8 @@ class Update:
     release_url:str
     download_url:str
     release_notes:str=''
+    manifest_url:str=''
+    size:int=0
 
 
 def parse_release(release,current=VERSION,repository=REPOSITORY):
@@ -37,7 +39,9 @@ def parse_release(release,current=VERSION,repository=REPOSITORY):
         if asset.get('browser_download_url')!=expected:continue
         notes=release.get('body')
         notes=notes[:16000].strip() if isinstance(notes,str) else ''
-        return Update(str(tag).removeprefix('v'),f'https://github.com/{repository}/releases/tag/{quote(tag,safe="")}',expected,notes)
+        manifest_url=f'https://github.com/{repository}/releases/download/{quote(tag,safe="")}/release-manifest.json'
+        has_manifest=any(isinstance(a,dict) and a.get('name')=='release-manifest.json' and a.get('state')=='uploaded' and a.get('browser_download_url')==manifest_url for a in assets)
+        return Update(str(tag).removeprefix('v'),f'https://github.com/{repository}/releases/tag/{quote(tag,safe="")}',expected,notes,manifest_url if has_manifest else '',asset['size'])
     return None
 
 

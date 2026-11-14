@@ -1,10 +1,11 @@
-# Photo Review v1.2
+# Photo Review v1.3
 
-- The startup update dialog now shows what changed, using the GitHub release notes.
-- Installed and available versions are displayed together.
-- Choose "Update now" to open the new EXE download, or "Skip" to continue reviewing. Skipping dismisses the prompt until the next launch.
-- Long release notes scroll inside the dialog. Missing notes show a clear fallback message.
+- Portable EXEs can now update in place. Choose "Update now" to download and verify the new release, save your review, and restart at the same EXE location.
+- Downloads show progress and transfer speed, and can be cancelled before installation.
+- Release size and SHA-256 checksums are verified before closing the app. Once the installed EXE is signed, updates also require a valid signature from the same publisher.
+- A temporary helper waits for PhotoReview to exit before replacing its EXE. Replacement or launch failures restore the previous EXE; a previous copy is retained in the app’s update cache.
+- Pictures, settings, and saved selections stay in place, and the current review reopens after updating.
 
-After downloading, close Photo Review and replace the old EXE. Pictures and saved settings stay in place. No Python or Docker installation is required.
+Versions through v1.2 need one final manual download/replacement to install this updater. After that, use the in-app update button for future releases. A writable application folder is required; the updater does not request administrator access.
 
-This release also exercises the startup update check from v1.1. Older versions display their existing update prompt; the release-notes layout is included in v1.2 for subsequent updates.
+Update checks still happen only when opening the app. "Skip" dismisses the prompt until the next launch. No Python, Docker, or separate installed updater is required.

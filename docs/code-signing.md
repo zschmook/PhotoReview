@@ -20,7 +20,7 @@ The proposed provider attribution, **to be activated only after acceptance**, is
 
 ## Privacy
 
-The application processes media locally and does not upload pictures, library paths, thumbnails, or import records. Its startup check sends a request to GitHub’s release API; the service receives ordinary connection information and the app version in the user agent. Choosing Update now opens GitHub’s download in the browser. See the [README privacy section](../README.md#privacy) and [GitHub privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
+The application processes media locally and does not upload pictures, library paths, thumbnails, or import records. Its startup check sends a request to GitHub’s release API; the service receives ordinary connection information and the app version in the user agent. Choosing Update now downloads the manifest and EXE from GitHub release storage; Python/manual fallback opens the download in the browser. Once the installed app is signed, in-place updates require a valid signature from the same publisher. Windows uses its standard trust services for certificate validation. See the [README privacy section](../README.md#privacy) and [GitHub privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
 
 If signing is enabled, the release workflow sends the public build artifact and source/build identifiers to SignPath for signing. User photo libraries and local development samples are excluded from the repository and release artifacts. See [SignPath’s privacy policy](https://signpath.io/privacy-policy).
 

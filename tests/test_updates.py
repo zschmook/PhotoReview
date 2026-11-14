@@ -104,3 +104,16 @@ class StartupUpdateUiTests(unittest.TestCase):
         from photo_review.ui import UpdateDialog
         dialog=UpdateDialog(self.window,Update('9.0','https://github.com/zschmook/PhotoReview/releases/tag/v9.0','https://github.com/zschmook/PhotoReview/releases/download/v9.0/PhotoReview.exe'))
         self.assertEqual(dialog.notes.toPlainText(),'No release notes were provided for this version.');dialog.close()
+    def test_verified_update_starts_helper_and_closes_after_saving(self):
+        with patch.object(self.window,'save',return_value=True) as save,patch.object(self.window,'close') as close,patch('photo_review.self_update.start_helper') as helper:
+            self.window.update_download_complete(object())
+            save.assert_called_once();helper.assert_called_once();close.assert_called_once()
+    def test_failed_review_save_keeps_app_open_without_starting_helper(self):
+        with patch.object(self.window,'save',return_value=False),patch.object(self.window,'close') as close,patch('photo_review.self_update.start_helper') as helper,patch('photo_review.self_update.discard_staged') as discard,patch('PySide6.QtWidgets.QMessageBox.warning'):
+            self.window.update_download_complete(object())
+            helper.assert_not_called();close.assert_not_called();discard.assert_called_once()
+    def test_cancel_after_download_keeps_app_open_and_discards_staging(self):
+        self.window.update_download_cancel.set()
+        with patch.object(self.window,'close') as close,patch('photo_review.self_update.start_helper') as helper,patch('photo_review.self_update.discard_staged') as discard:
+            self.window.update_download_complete(object())
+            helper.assert_not_called();close.assert_not_called();discard.assert_called_once()

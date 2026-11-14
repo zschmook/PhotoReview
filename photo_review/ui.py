@@ -83,7 +83,7 @@ def button(text,handler=None,primary=False):
 
 
 class UpdateDialog(QDialog):
-    def __init__(self,parent,update,current=VERSION):
+    def __init__(self,parent,update,current=VERSION,in_place=False):
         super().__init__(parent)
         self.setWindowTitle('Photo Review update available')
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
@@ -96,7 +96,8 @@ class UpdateDialog(QDialog):
         self.notes=QPlainTextEdit(self);self.notes.setReadOnly(True)
         self.notes.setPlainText(update.release_notes or 'No release notes were provided for this version.')
         self.notes.setMinimumHeight(150);box.addWidget(self.notes,1)
-        detail=label('Update now opens the EXE download in your browser. After downloading, close Photo Review and replace the old EXE. Your pictures and saved settings stay in place.','muted')
+        instructions=('Update now downloads and verifies the new version, saves your review, then restarts Photo Review at the same location. Your pictures and settings stay in place.' if in_place else 'Update now opens the EXE download in your browser. After downloading, close Photo Review and replace the old EXE. Your pictures and saved settings stay in place.')
+        detail=label(instructions,'muted')
         detail.setWordWrap(True);box.addWidget(detail)
         box.addWidget(label('Skip dismisses this prompt until the next launch.','small'))
         row=QHBoxLayout();row.addStretch()
@@ -713,6 +714,7 @@ class Window(QMainWindow):
         self.connected_phones=[];self.offered_phones=set();self.phone_prompt_open=False;self.after_job=None
         self.usb_watcher=None;self.usb_watchers=[];self.connected_usb=[];self.offered_usb=set();self.usb_prompt_open=False
         self.update_checked=False;self.update_worker=None;self.pending_update=None;self.update_notice=None
+        self.update_download_worker=None;self.update_download_dialog=None;self.update_download_cancel=threading.Event()
         self.update_display_timer=QTimer(self);self.update_display_timer.setInterval(500);self.update_display_timer.timeout.connect(self.show_update_if_ready)
         self.setStyleSheet(STYLE);self.build_menu()
         host=QWidget();self.setCentralWidget(host);layout=QVBoxLayout(host);layout.setContentsMargins(0,0,0,0);layout.setSpacing(0)
@@ -757,12 +759,38 @@ class Window(QMainWindow):
         if self.pending_update is None:self.update_display_timer.stop();return
         if not self.root or (self.worker and self.worker.isRunning()) or QApplication.activeModalWidget() is not None:return
         update=self.pending_update;self.pending_update=None;self.update_display_timer.stop()
-        self.update_notice=UpdateDialog(self,update)
-        def download():
+        from .self_update import portable_executable
+        in_place=bool(portable_executable() and update.manifest_url)
+        self.update_notice=UpdateDialog(self,update,in_place=in_place)
+        self.update_notice.accepted.connect(lambda:self.begin_update(update));self.update_notice.open()
+    def begin_update(self,update):
+        from .self_update import portable_executable,stage_update
+        target=portable_executable()
+        if target is None or not update.manifest_url:
             from PySide6.QtCore import QUrl
             from PySide6.QtGui import QDesktopServices
-            QDesktopServices.openUrl(QUrl(update.download_url))
-        self.update_notice.accepted.connect(download);self.update_notice.open()
+            QDesktopServices.openUrl(QUrl(update.download_url));return
+        if self.closing or (self.update_download_worker and self.update_download_worker.isRunning()):return
+        self.current.pause();self.reference.pause();self.update_download_cancel.clear()
+        dialog=BusyDialog(self,self.update_download_cancel);self.update_download_dialog=dialog
+        dialog.setWindowTitle('Updating Photo Review');dialog.counter.setText('Downloading update…')
+        dialog.detail.setText('The current app stays open until the new EXE has been verified.');dialog.open()
+        worker=Worker(lambda progress:stage_update(update,target,cancel=self.update_download_cancel,progress=progress));self.update_download_worker=worker
+        worker.progress.connect(dialog.update_progress);worker.result.connect(self.update_download_complete);worker.error.connect(self.update_download_failed);worker.start()
+    def update_download_failed(self,message):
+        if self.update_download_dialog:self.update_download_dialog.finish();self.update_download_dialog=None
+        if not self.closing and not self.update_download_cancel.is_set():QMessageBox.warning(self,'Update could not be installed',message+'\n\nPhoto Review is still running. You can try again next time you open it.')
+    def update_download_complete(self,staged):
+        from .self_update import start_helper,discard_staged
+        if self.update_download_dialog:self.update_download_dialog.finish();self.update_download_dialog=None
+        if self.closing or self.update_download_cancel.is_set():discard_staged(staged);return
+        try:
+            if not self.save():raise RuntimeError('Your review could not be saved. The app will stay open.')
+            resume=self.draft if self.root and self.photos else None
+            start_helper(staged,resume=resume)
+        except Exception as error:
+            discard_staged(staged);QMessageBox.warning(self,'Update could not be installed',str(error));return
+        self.close()
     def read_preferences(self):
         try:
             result=json.loads(self.preferences.read_text(encoding='utf-8'))
@@ -1366,7 +1394,8 @@ class Window(QMainWindow):
     def save(self):
         if self.root and self.photos:
             try:save_draft(self.draft,self.root,self.photos,self.groups,self.minutes.value(),self.threshold.value(),self.group_index,selected_paths=self.selection_paths,time_range=self.time_range,folder_filter=self.folder_filter,mode=self.mode,photo_index=self.photo_index)
-            except OSError as error:self.statusBar().showMessage('Could not save review: '+str(error))
+            except OSError as error:self.statusBar().showMessage('Could not save review: '+str(error));return False
+        return True
     def resume(self,path=None):
         if self.worker and self.worker.isRunning():return
         if not path:path,_=QFileDialog.getOpenFileName(self,'Resume review',str(DATA),'Photo Review files (*.json)')
@@ -1504,7 +1533,9 @@ class Window(QMainWindow):
         self.regroup_timer.stop()
         running=[watcher for watcher in self.phone_watchers+self.usb_watchers if watcher.isRunning()]
         for watcher in running:watcher.stop()
-        if self.update_worker and self.update_worker.isRunning():
+        if self.update_download_worker and self.update_download_worker.isRunning():
+            self.update_download_cancel.set();event.ignore();self.update_download_worker.finished.connect(self.close)
+        elif self.update_worker and self.update_worker.isRunning():
             event.ignore();self.update_worker.finished.connect(self.close)
         elif self.worker and self.worker.isRunning():
             self.cancel.set();event.ignore();self.worker.finished.connect(self.close)

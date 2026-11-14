@@ -17,7 +17,11 @@ def main():
     parser.add_argument('--matcher',choices=('cpu','auto','gpu'),default='auto',help='Optional cross-vendor GPU matching prototype')
     parser.add_argument('--smoke-test',type=Path,help='Validate packaged dependencies with tiny generated images and write a JSON report')
     parser.add_argument('-reset','--reset',action='store_true',help='Archive app settings/cache and start the first-run wizard again; original photos are untouched')
+    parser.add_argument('--apply-update',type=Path,help=argparse.SUPPRESS)
     args=parser.parse_args()
+    if args.apply_update:
+        from photo_review.self_update import helper_main
+        return helper_main(args.apply_update,smoke_report=args.smoke_test)
     if args.reset and (args.render_dir or args.smoke_test or args.resume_review or args.selection or args.all_samples or args.demo):
         parser.error('-reset starts a fresh profile; use it without review, render, demo, or smoke-test arguments')
     os.environ['PHOTO_REVIEW_MATCHER']=args.matcher
