@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=70"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "photo-review"
 description = "Windows photo comparison and keep-first review"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dynamic = ["dependencies", "version"]
 

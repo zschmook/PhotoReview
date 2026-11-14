@@ -1,10 +1,38 @@
 # Photo Review v1.2
 
-A Windows desktop app for comparing similar photos and choosing what to keep. Python + PySide6, packaged as a single EXE with Nuitka. Photo processing happens locally.
+A Windows desktop app for sorting a camera roll, comparing similar shots, and choosing which pictures and videos to keep. Import from an Android phone, iPhone, or USB drive, then review the files in your own library.
+
+**You choose what goes. Checked always means Keep; unchecked means Recycle.** Matching suggests similar pictures without automatically choosing a winner. Keep one, several, all, or none of the pictures in a set.
+
+## Features
+
+| Feature | What it does |
+| --- | --- |
+| Compare similar pictures | Finds similar shots within the same folder using perceptual hashing and structural similarity. Adjust similarity from 60–100% and the capture-time window from 1 minute to 30 days. |
+| Review pictures and videos | Browse individual files without running comparisons. Videos play in the preview area and are never compared as still images. |
+| Fast, familiar navigation | Windows menus, a folder tree, thumbnails, image previews, and keyboard shortcuts. Selections stay saved as you move between folders. |
+| Final review before recycling | Expand a row to preview a proposed removal, change its Keep checkbox, and see the space to recover before accepting. Local removals use the Windows Recycle Bin. |
+| Phone imports | Detect connected Android phones and iPhones, wait for unlock/USB access, and optionally include videos. Progress separates discovery, files already on the PC, and new downloads, with transfer speed. |
+| Incremental importing | Compare file content with checksums and retain local import records so repeat imports copy missing files instead of creating another copy of everything. |
+| Organized destinations | Keep imports inside the selected library, with separate phone folders and simple Year/Month/Day, Year/Month, or date-folder layouts. Videos go into the phone’s Videos folder. |
+| USB-drive imports | Detect a thumb drive and search all ordinary folders for supported media. USB originals are copied and left in place. |
+| iPhone photo formats | Preview and compare HEIC/HEIF files directly. Create JPEG copies while retaining originals, including a conversion command for existing folders. |
+| Optional phone cleanup | After importing, use a separate two-confirmation flow with fresh checksum verification before removing phone originals. |
+| Repeat-use performance | Local SQLite caches and thumbnails speed up later reviews. Optional cross-vendor GPU comparison falls back to CPU when unavailable. |
+| Startup update checks | Check GitHub once when opening the app, display release notes, and offer Update now or Skip. |
+
+Photo Review runs locally, requires no account for reviewing files, and is available as a single Windows x64 EXE. It is written in Python with PySide6 and packaged with Nuitka.
 
 ## Download
 
 Get **PhotoReview.exe** from [GitHub Releases](https://github.com/zschmook/PhotoReview/releases). No Python or Docker installation is required. Keep your existing settings by replacing the EXE; persistent data lives under `%LOCALAPPDATA%/PhotoReview/data`.
+
+1. Open the app and choose your picture library. It remembers your choice.
+2. Select **Compare** to find similar pictures, or **Review** to browse pictures and videos individually.
+3. Leave files checked to keep them. Uncheck files you want to recycle.
+4. Choose **Review changes**, check the previews and totals, and explicitly accept the removals.
+
+The app does not reorganize existing library files. Import folder layouts apply to newly imported files.
 
 ## Review pictures
 
@@ -79,3 +107,19 @@ Focused release checks use disposable generated images and mocked phone operatio
 ```
 
 Additional UI and video tests are available in tests/. Some older UI scenarios require optional local demo fixtures. Development test selection does not access physical phones or personal photo libraries. The packaged smoke check enumerates device identities and creates Shell interfaces without copying or deleting phone files.
+
+## Privacy
+
+Photo comparison, thumbnails, import history, and checksums are processed and stored on the PC. Photo Review does not upload your media or collect analytics. A startup update check connects to GitHub; GitHub receives the connection’s IP address and the app version in its user agent, but no pictures or library paths. Choosing **Update now** opens a GitHub download in your browser. See [GitHub’s privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) for that service.
+
+## Code signing policy
+
+SignPath Foundation signing is being prepared. The project has not yet been approved, and releases must be treated as unsigned unless their Windows signature verifies successfully. No signing sponsorship is claimed at this stage.
+
+The maintainer, [zschmook](https://github.com/zschmook), is responsible for authoring, reviewing contributions, and approving releases. Signing is intended to cover only Photo Review’s own EXE built from the matching public source tag on GitHub-hosted runners. Third-party components retain their own licenses and publisher identities.
+
+See the [SignPath setup and application notes](docs/code-signing.md) for the proposed signing flow and remaining setup.
+
+## License
+
+Photo Review’s original source code and project-created assets are Copyright (C) 2026 Zachary Schmook and licensed under the **GNU General Public License, version 3 only (GPL-3.0-only)**. See [LICENSE](LICENSE). The program is provided without warranty. Dependencies remain under their respective licenses.
