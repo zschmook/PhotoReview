@@ -124,7 +124,7 @@ Photo comparison, thumbnails, import history, and checksums are processed and st
 
 ## Code signing policy
 
-SignPath Foundation signing is being prepared. The project has not yet been approved, and releases must be treated as unsigned unless their Windows signature verifies successfully. No signing sponsorship is claimed at this stage.
+The SignPath Foundation application was submitted on November 14, 2026 and is awaiting review. Signing remains disabled pending approval and account setup. Releases must be treated as unsigned unless their Windows signature verifies successfully. No signing sponsorship is claimed at this stage.
 
 The maintainer, [zschmook](https://github.com/zschmook), is responsible for authoring, reviewing contributions, and approving releases. Signing is intended to cover only Photo Review’s own EXE built from the matching public source tag on GitHub-hosted runners. Third-party components retain their own licenses and publisher identities.
 

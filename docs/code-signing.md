@@ -2,7 +2,7 @@
 
 ## Status
 
-Photo Review is preparing an application for SignPath Foundation’s free open-source signing program. An application has not been submitted, approval has not been granted, and no SignPath credentials have been configured. Existing releases are unsigned unless their Windows signature verifies successfully.
+Photo Review applied to SignPath Foundation’s free open-source signing program on November 14, 2026. The application form confirmed submission with “Form submitted. Thank you, we'll be in touch soon.” The application is awaiting review; approval has not been granted and no SignPath credentials have been configured. Existing releases are unsigned unless their Windows signature verifies successfully.
 
 The project’s original code and assets use GPL-3.0-only; see [LICENSE](../LICENSE). Dependencies retain their own licenses. Public source and releases are available at [zschmook/PhotoReview](https://github.com/zschmook/PhotoReview).
 
@@ -24,15 +24,15 @@ The application processes media locally and does not upload pictures, library pa
 
 If signing is enabled, the release workflow sends the public build artifact and source/build identifiers to SignPath for signing. User photo libraries and local development samples are excluded from the repository and release artifacts. See [SignPath’s privacy policy](https://signpath.io/privacy-policy).
 
-## Prepared application
+## Submitted application
 
-Use the [SignPath Foundation application page](https://signpath.org/apply). This is a draft of the project information, not a submitted application.
+The application was submitted through the [SignPath Foundation application page](https://signpath.org/apply). The project information below describes the application; the submitted form and contact details are recorded privately in the local development notes. Optional marketing communications were left unchecked.
 
 | Field | Value |
 | --- | --- |
 | Project | Photo Review / PhotoReview |
 | Maintainer | Zachary Schmook, GitHub `zschmook` |
-| Contact email | To be supplied by the maintainer; do not infer it from Git’s no-reply address. |
+| Contact email | Supplied privately to SignPath by the maintainer; omitted from this public page. |
 | Project homepage and source | https://github.com/zschmook/PhotoReview |
 | Releases | https://github.com/zschmook/PhotoReview/releases |
 | License | GNU GPL version 3 only, GPL-3.0-only |
