@@ -17,6 +17,23 @@ from photo_review.version import VERSION,REPOSITORY
 from photo_review.updates import version_tuple
 
 
+class ReleaseAPIError(RuntimeError):
+    pass
+
+
+def request_json(request,timeout,token):
+    try:
+        with urlopen(request,timeout=timeout) as response:body=response.read()
+        return json.loads(body) if body else None
+    except HTTPError as error:
+        if error.code==404:raise
+        try:message=json.loads(error.read(16384)).get('message','')
+        except (ValueError,AttributeError):message=''
+        message=' '.join(str(message).replace(token,'[redacted]').split())[:500]
+        path=request.selector.split('?',1)[0]
+        raise ReleaseAPIError(f'{request.get_method()} {path}: HTTP {error.code}'+(': '+message if message else '')) from None
+
+
 def validate_tag(tag):
     if not re.fullmatch(r'v\d+\.\d+(?:\.\d+)?',tag) or version_tuple(tag)!=version_tuple(VERSION):
         raise ValueError(f'Release tag must match app version {VERSION}; got {tag!r}')
@@ -40,6 +57,23 @@ def release_assets(dist=ROOT/'dist'):
     return [exe,checksum,manifest]
 
 
+def verify_remote_tag(api,tag,head):
+    try:reference=api('GET','/git/ref/tags/'+quote(tag,safe=''))
+    except HTTPError as error:
+        if error.code==404:raise ValueError('The release tag must already exist on GitHub') from None
+        raise
+    target=reference.get('object',{})
+    for _ in range(10):
+        sha=target.get('sha','')
+        if not re.fullmatch(r'[0-9a-f]{40,64}',sha):raise ValueError('Invalid remote tag target')
+        if target.get('type')=='commit':
+            if sha!=head:raise ValueError('Remote release tag no longer matches the tested checkout')
+            return
+        if target.get('type')!='tag':raise ValueError('Remote release tag does not resolve to a commit')
+        target=api('GET','/git/tags/'+sha).get('object',{})
+    raise ValueError('Remote release tag nesting exceeds the supported limit')
+
+
 def publish(tag,token):
     validate_tag(tag)
     if not token:raise ValueError('GITHUB_TOKEN is required for publishing')
@@ -52,12 +86,15 @@ def publish(tag,token):
         request=Request('https://api.github.com/repos/'+REPOSITORY+path,data=data,method=method,headers={
             'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json',
             'X-GitHub-Api-Version':'2026-03-10','User-Agent':'PhotoReview-Release'})
-        with urlopen(request,timeout=60) as response:body=response.read()
-        return json.loads(body) if body else None
+        return request_json(request,60,token)
+    verify_remote_tag(api,tag,head)
     try:release=api('GET','/releases/tags/'+quote(tag,safe=''))
     except HTTPError as error:
         if error.code!=404:raise
-        release=api('POST','/releases',dict(tag_name=tag,target_commitish=head,name='Photo Review '+tag,body=release_body(tag),draft=True,prerelease=False))
+        # The remote tag above already pins the tested commit. Supplying its SHA
+        # as target_commitish needlessly triggers workflow-write permission checks
+        # if main's workflow changes while this build is running.
+        release=api('POST','/releases',dict(tag_name=tag,name='Photo Review '+tag,body=release_body(tag),draft=True,prerelease=False))
     if not release.get('draft'):raise ValueError('This release is already published; bump the version instead of replacing it')
     release_id=int(release['id'])
     for asset in release.get('assets',[]):
@@ -66,7 +103,8 @@ def publish(tag,token):
         # GitHub release assets use a fixed host; never trust an upload URL from metadata.
         request=Request(f'https://uploads.github.com/repos/{REPOSITORY}/releases/{release_id}/assets?name={quote(file.name)}',data=file.read_bytes(),method='POST',headers={
             'Authorization':'Bearer '+token,'Content-Type':'application/octet-stream','User-Agent':'PhotoReview-Release'})
-        with urlopen(request,timeout=300) as response:json.load(response)
+        request_json(request,300,token)
+    verify_remote_tag(api,tag,head)
     result=api('PATCH','/releases/'+str(release_id),dict(draft=False,make_latest='true'))
     print('Published: '+result['html_url'])
 
@@ -78,7 +116,7 @@ def main():
         validate_tag(args.tag)
         if args.validate:print('Validated '+args.tag);return 0
         publish(args.tag,os.environ.get('GITHUB_TOKEN',''));return 0
-    except (OSError,ValueError,HTTPError,subprocess.CalledProcessError) as error:
+    except (OSError,ValueError,ReleaseAPIError,subprocess.CalledProcessError) as error:
         print('Release failed: '+str(error),file=sys.stderr);return 1
 
 

@@ -1,4 +1,5 @@
 name: Windows release
+run-name: Photo Review ${{ github.event.inputs.tag || github.ref_name }}
 
 on:
   push:
@@ -108,6 +109,13 @@ jobs:
           $ErrorActionPreference = 'Stop'
           ./tools/verify_signed_release.ps1 -Path .build/signed/PhotoReview.exe -ExpectedVersion $env:EXPECTED_VERSION
           Copy-Item -LiteralPath .build/signed/PhotoReview.exe -Destination dist/PhotoReview.exe -Force
+      - name: Save tested EXE for release recovery
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: photoreview-tested-${{ env.RELEASE_TAG }}
+          path: dist/PhotoReview.exe
+          if-no-files-found: error
+          retention-days: 7
       - name: Publish tested release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

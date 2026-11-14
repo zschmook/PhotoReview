@@ -104,6 +104,8 @@ The **Windows release** GitHub Actions workflow tests generated-data operations,
 
 The optional SignPath stage is prepared but disabled pending approval/account setup. When enabled, it waits for signing approval, validates the signed EXE, and computes release checksums from that signed copy before publication. See [Code signing policy](docs/code-signing.md).
 
+The tested EXE is also saved as a GitHub workflow artifact for seven days before publication, so a publishing failure can be recovered without compiling again. Publishing verifies that the remote version tag still matches the tested checkout; it does not create or move version tags.
+
 GPU execution is optional in the smoke test because hosted runners may lack a hardware GPU. CPU comparison, HEIC decoding/conversion, Qt startup, icon loading and Windows Shell interfaces remain checked. Generated CI diagnostics are stored as workflow artifacts.
 
 ## Tests
