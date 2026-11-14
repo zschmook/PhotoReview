@@ -23,21 +23,21 @@ class UpdateTests(unittest.TestCase):
         for bad in ('latest','v1.1-beta','1.0.exe','1.0<script>','1.01'):
             with self.assertRaises(ValueError):version_tuple(bad)
     def test_only_new_stable_published_exe_is_offered(self):
-        self.assertEqual(parse_release(release()).version,'1.1')
-        for payload in (release('v1.0'),release('v0.9'),release('v1.0.0'),release('v1.1-beta')):self.assertIsNone(parse_release(payload))
+        self.assertEqual(parse_release(release(),current='1.0').version,'1.1')
+        for payload in (release('v1.0'),release('v0.9'),release('v1.0.0'),release('v1.1-beta')):self.assertIsNone(parse_release(payload,current='1.0'))
         for key,value in (('draft',True),('prerelease',True),('assets',[])):
-            payload=release();payload[key]=value;self.assertIsNone(parse_release(payload))
+            payload=release();payload[key]=value;self.assertIsNone(parse_release(payload,current='1.0'))
     def test_asset_url_cannot_redirect_to_another_repo_or_site(self):
         for url in ('https://example.com/PhotoReview.exe','https://github.com/other/repo/releases/download/v1.1/PhotoReview.exe','http://github.com/zschmook/PhotoReview/releases/download/v1.1/PhotoReview.exe'):
-            payload=release();payload['assets'][0]['browser_download_url']=url;self.assertIsNone(parse_release(payload))
+            payload=release();payload['assets'][0]['browser_download_url']=url;self.assertIsNone(parse_release(payload,current='1.0'))
         for key,value in (('size',0),('state','new'),('name','source.zip')):
-            payload=release();payload['assets'][0][key]=value;self.assertIsNone(parse_release(payload))
+            payload=release();payload['assets'][0][key]=value;self.assertIsNone(parse_release(payload,current='1.0'))
     def test_one_public_request_has_timeout_and_bounded_payload(self):
         class Response(io.BytesIO):
             def geturl(self):return 'https://api.github.com/repos/zschmook/PhotoReview/releases/latest'
         calls=[]
         def opener(request,timeout):calls.append((request,timeout));return Response(json.dumps(release()).encode())
-        self.assertEqual(check_latest(opener=opener).version,'1.1');self.assertEqual(len(calls),1);self.assertEqual(calls[0][1],5)
+        self.assertEqual(check_latest(current='1.0',opener=opener).version,'1.1');self.assertEqual(len(calls),1);self.assertEqual(calls[0][1],5)
         self.assertNotIn('Authorization',dict(calls[0][0].header_items()))
         with self.assertRaisesRegex(ValueError,'size limit'):check_latest(opener=lambda *a,**kw:Response(b' '*(256*1024+1)))
     def test_no_release_and_network_failure(self):
@@ -67,7 +67,7 @@ class StartupUpdateUiTests(unittest.TestCase):
             self.assertEqual(check.call_count,1);self.assertIsNone(self.window.update_notice)
     def test_notice_waits_for_folder_and_only_download_click_opens_browser(self):
         from PySide6.QtCore import QTimer
-        update=parse_release(release())
+        update=parse_release(release(),current='1.0')
         self.window.update_check_complete(update);self.assertIsNone(self.window.update_notice)
         self.window.root=Path(self.temp.name);self.window.show_update_if_ready();self.assertIsNotNone(self.window.update_notice)
         with patch('PySide6.QtGui.QDesktopServices.openUrl') as opened:

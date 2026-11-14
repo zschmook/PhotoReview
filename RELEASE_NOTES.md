@@ -1,4 +1,6 @@
-# Photo Review v1.0
+# Photo Review v1.1
+
+Reissues the initial release through the automated Windows build and publication workflow. No application behavior changes from v1.0.
 
 Windows photo comparison and review, with Keep checked by default and explicit final acceptance before recycling local files.
 

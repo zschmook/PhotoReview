@@ -1,4 +1,4 @@
-# Photo Review v1.0
+# Photo Review v1.1
 
 A Windows desktop app for comparing similar photos and choosing what to keep. Python + PySide6, packaged as a single EXE with Nuitka. Photo processing happens locally.
 
@@ -61,9 +61,9 @@ The single EXE is published to `dist/PhotoReview.exe`. Intermediate output stays
 The version lives in **photo_review/version.py**. Package metadata and Windows EXE resources derive from it. Update that version and RELEASE_NOTES.md for the next release, commit, then push a matching version tag:
 
 ```bash
-git tag v1.0
+git tag v1.1
 git push origin main
-git push origin v1.0
+git push origin v1.1
 ```
 
 The **Windows release** GitHub Actions workflow tests generated-data operations, builds a Windows x64 single EXE, runs the packaged smoke test, and publishes PhotoReview.exe, SHA256SUMS.txt and release-manifest.json. It uses a draft until all assets are uploaded. A published version is never overwritten; use a new version/tag. Failed builds leave no published update. The workflow can also be run manually for an existing matching tag.
