@@ -42,6 +42,8 @@ Use the [SignPath Foundation application page](https://signpath.org/apply). This
 
 Description:
 
+> I originally built Photo Review for my family, especially relatives who find modern photo applications overwhelming because they have too many options. The interface is deliberately bare bones by default, focused on importing pictures, comparing similar shots, and choosing what to keep. Keeping that workflow approachable for people without technical experience is a long-term design goal. Printing, ordering prints through commercial third-party services, and similar integrations are outside the project's scope.
+>
 > Photo Review is a Windows desktop application for user-controlled photo culling and media import. It groups similar pictures within a folder, provides individual picture/video review, and imports photos and optional videos from Android phones, iPhones, and USB drives. HEIC files can be previewed and compared or converted to JPEG copies while retaining originals. Local removals use the Windows Recycle Bin after a final review. Optional phone-original removal requires two confirmations and fresh checksum verification. Media processing and caches stay on the PC. The app is distributed as a single EXE with public tagged source and automated generated-data tests.
 
 The project is new. Do not claim an established user base, independent reviews, verified account security, or SignPath acceptance. SignPath considers public reputation as well as the technical requirements; acceptance is discretionary.

@@ -4,6 +4,12 @@ A Windows desktop app for sorting a camera roll, comparing similar shots, and ch
 
 **You choose what goes. Checked always means Keep; unchecked means Recycle.** Matching suggests similar pictures without automatically choosing a winner. Keep one, several, all, or none of the pictures in a set.
 
+## Built for family
+
+Photo Review began as a tool for my family, especially relatives who find modern photo applications overwhelming because they have too many options. The interface is deliberately bare bones by default: import your pictures, compare similar shots, and choose what to keep. Keeping that workflow approachable for people without technical experience is a long-term design goal.
+
+Printing, ordering prints through commercial third-party services, and similar integrations are outside the project's scope.
+
 ## Features
 
 | Feature | What it does |
