@@ -1,5 +1,5 @@
 -r requirements.txt
 wgpu==0.33.0
-nuitka==4.3.4
+nuitka==4.3.5
 ordered-set
 zstandard

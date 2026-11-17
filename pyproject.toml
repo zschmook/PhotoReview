@@ -19,4 +19,4 @@ include = ["photo_review*"]
 
 [project.optional-dependencies]
 gpu = ["wgpu==0.33.0"]
-build = ["nuitka>=2.4", "ordered-set", "zstandard"]
+build = ["nuitka>=4.3.5", "ordered-set", "zstandard"]
